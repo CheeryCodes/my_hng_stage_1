@@ -1,23 +1,32 @@
 const express = require('express');
 const axios = require('axios');
+require('dotenv').config();
+
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.get('/api/hello', async (req, res) => {
-  const visitorName = req.query.visitor_name || 'Guest';
-  const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  try {
+    const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const locationResponse = await axios.get(`https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${clientIp}`);
+    const locationData = locationResponse.data;
+    
+    const city = locationData.city;
+    const weatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${process.env.WEATHER_API_KEY}`);
+    const weatherData = weatherResponse.data;
+    
+    const temperature = weatherData.main.temp;
+    const greeting = `Hello, Mark!, the temperature is ${temperature} degrees Celsius in ${city}`;
 
-  // Mock location and temperature for testing
-  const location = "Test City";
-  const temperature = 25;
-
-  const greeting = `Hello, ${visitorName}!, the temperature is ${temperature} degrees Celsius in ${location}`;
-
-  res.json({
-    client_ip: clientIp,
-    location: location,
-    greeting: greeting
-  });
+    res.json({
+      client_ip: clientIp,
+      location: city,
+      greeting: greeting
+    });
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    res.status(500).json({ error: 'Error fetching data' });
+  }
 });
 
 app.listen(port, () => {
