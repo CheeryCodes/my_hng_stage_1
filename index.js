@@ -7,7 +7,9 @@ const port = process.env.PORT || 3000;
 
 app.get('/api/hello', async (req, res) => {
   try {
-    const visitorName = req.query.visitor_name || 'Guest';
+    let visitorName = req.query.visitor_name || 'Guest';
+    visitorName = visitorName.replace(/^"|"$/g, ''); // Remove surrounding quotes if they exist
+
     const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const locationResponse = await axios.get(`https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${clientIp}`);
     const locationData = locationResponse.data;
